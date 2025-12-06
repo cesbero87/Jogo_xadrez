@@ -27,10 +27,18 @@ class Game {
         this.possibleMoves = [];
         this.gameOver = false;
         
+        // Score state
+        this.score = {
+            white: 0,
+            black: 0
+        };
+        
         this.boardElement = document.getElementById('chessboard');
         this.statusElement = document.getElementById('status');
         this.indicatorElement = document.getElementById('player-indicator');
         this.restartBtn = document.getElementById('restart-btn');
+        this.scoreWhiteElement = document.getElementById('score-white');
+        this.scoreBlackElement = document.getElementById('score-black');
         
         this.init();
     }
@@ -49,6 +57,16 @@ class Game {
         this.gameOver = false;
         this.renderBoard();
         this.updateStatus();
+    }
+
+    updateScore(winner) {
+        if (winner === 'white') {
+            this.score.white++;
+            this.scoreWhiteElement.innerText = this.score.white;
+        } else if (winner === 'black') {
+            this.score.black++;
+            this.scoreBlackElement.innerText = this.score.black;
+        }
     }
 
     renderBoard() {
@@ -117,6 +135,21 @@ class Game {
         this.renderBoard();
     }
 
+    checkUserGameOver() {
+        const moves = this.getAllValidMoves('white');
+        if (moves.length === 0) {
+            if (this.isInCheck('white')) {
+                alert("Xeque-mate! As Pretas venceram!");
+                this.updateScore('black');
+            } else {
+                alert("Afogamento! Empate.");
+            }
+            this.gameOver = true;
+            return true;
+        }
+        return false;
+    }
+
     getPieceColor(piece) {
         if (piece === ' ') return null;
         return piece === piece.toUpperCase() ? 'white' : 'black';
@@ -156,9 +189,14 @@ class Game {
         
         if (bestMove) {
             this.makeMove(bestMove);
+            // Check if user has no moves
+            if (!this.gameOver) {
+               this.checkUserGameOver();
+            }
         } else {
             if (this.isInCheck('black')) {
                 alert("Xeque-mate! As Brancas venceram!");
+                this.updateScore('white');
             } else {
                 alert("Afogamento! Empate.");
             }
