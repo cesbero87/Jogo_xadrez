@@ -4,8 +4,71 @@ const pieceUnicode = {
 };
 
 const pieceValues = {
-    'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 900,
-    'P': 10, 'N': 30, 'B': 30, 'R': 50, 'Q': 90, 'K': 900
+    'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000,
+    'P': 100, 'N': 320, 'B': 330, 'R': 500, 'Q': 900, 'K': 20000
+};
+
+const pst = {
+    p: [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [50, 50, 50, 50, 50, 50, 50, 50],
+        [10, 10, 20, 30, 30, 20, 10, 10],
+        [5,  5, 10, 25, 25, 10,  5,  5],
+        [0,  0,  0, 20, 20,  0,  0,  0],
+        [5, -5,-10,  0,  0,-10, -5,  5],
+        [5, 10, 10,-20,-20, 10, 10,  5],
+        [0,  0,  0,  0,  0,  0,  0,  0]
+    ],
+    n: [
+        [-50,-40,-30,-30,-30,-30,-40,-50],
+        [-40,-20,  0,  0,  0,  0,-20,-40],
+        [-30,  0, 10, 15, 15, 10,  0,-30],
+        [-30,  5, 15, 20, 20, 15,  5,-30],
+        [-30,  0, 15, 20, 20, 15,  0,-30],
+        [-30,  5, 10, 15, 15, 10,  5,-30],
+        [-40,-20,  0,  5,  5,  0,-20,-40],
+        [-50,-40,-30,-30,-30,-30,-40,-50]
+    ],
+    b: [
+        [-20,-10,-10,-10,-10,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5, 10, 10,  5,  0,-10],
+        [-10,  5,  5, 10, 10,  5,  5,-10],
+        [-10,  0, 10, 10, 10, 10,  0,-10],
+        [-10, 10, 10, 10, 10, 10, 10,-10],
+        [-10,  5,  0,  0,  0,  0,  5,-10],
+        [-20,-10,-10,-10,-10,-10,-10,-20]
+    ],
+    r: [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [5, 10, 10, 10, 10, 10, 10,  5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [0,  0,  0,  5,  5,  0,  0,  0]
+    ],
+    q: [
+        [-20,-10,-10, -5, -5,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5,  5,  5,  5,  0,-10],
+        [-5,  0,  5,  5,  5,  5,  0, -5],
+        [0,  0,  5,  5,  5,  5,  0, -5],
+        [-10,  5,  5,  5,  5,  5,  0,-10],
+        [-10,  0,  5,  0,  0,  0,  0,-10],
+        [-20,-10,-10, -5, -5,-10,-10,-20]
+    ],
+    k: [
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-20,-30,-30,-40,-40,-30,-30,-20],
+        [-10,-20,-20,-20,-20,-20,-20,-10],
+        [20, 20,  0,  0,  0,  0, 20, 20],
+        [20, 30, 10,  0,  0, 10, 30, 20]
+    ]
 };
 
 const initialBoard = [
@@ -213,9 +276,21 @@ class Game {
         let bestMove = null;
         const possibleMoves = this.getAllValidMoves('black');
 
-        // Simple ordering: captures first could improve alpha-beta pruning?
-        // For now, shuffle to vary gameplay if scores are equal
-        possibleMoves.sort(() => Math.random() - 0.5);
+        // Move ordering: Captures first, then random
+        possibleMoves.sort((a, b) => {
+            const pieceA = this.board[a.toRow][a.toCol];
+            const pieceB = this.board[b.toRow][b.toCol];
+            const isCaptureA = pieceA !== ' ';
+            const isCaptureB = pieceB !== ' ';
+
+            if (isCaptureA && !isCaptureB) return -1;
+            if (!isCaptureA && isCaptureB) return 1;
+            if (isCaptureA && isCaptureB) {
+                // Both captures: prioritize capturing higher value piece
+                return (pieceValues[pieceB.toLowerCase()] || 0) - (pieceValues[pieceA.toLowerCase()] || 0);
+            }
+            return Math.random() - 0.5;
+        });
 
         for (let move of possibleMoves) {
             // Execute move
@@ -309,18 +384,24 @@ class Game {
                 const piece = this.board[r][c];
                 if (piece === ' ') continue;
                 
-                const value = pieceValues[piece] || 0;
+                const type = piece.toLowerCase();
+                const isWhite = piece === piece.toUpperCase();
                 
-                // Simple position bonus (central control)
-                let positionBonus = 0;
-                if ((r === 3 || r === 4) && (c === 3 || c === 4)) positionBonus = 2; // Center
+                const baseValue = pieceValues[type] || 0;
+                let positionValue = 0;
 
-                if (piece === piece.toUpperCase()) {
-                    // White
-                    score -= (value + positionBonus);
+                if (pst[type]) {
+                    if (isWhite) {
+                        positionValue = pst[type][r][c];
+                    } else {
+                        positionValue = pst[type][7 - r][c]; // Mirror for black
+                    }
+                }
+
+                if (isWhite) {
+                    score -= (baseValue + positionValue);
                 } else {
-                    // Black (AI)
-                    score += (value + positionBonus);
+                    score += (baseValue + positionValue);
                 }
             }
         }
