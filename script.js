@@ -207,7 +207,8 @@ class Game {
     // --- AI Logic (Minimax) ---
 
     getBestMove() {
-        const depth = 3; // Depth of search
+        const difficultySelect = document.getElementById('difficulty');
+        const depth = parseInt(difficultySelect.value); // Depth from selector
         let bestScore = -Infinity;
         let bestMove = null;
         const possibleMoves = this.getAllValidMoves('black');

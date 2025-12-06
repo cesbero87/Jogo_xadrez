@@ -236,8 +236,38 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
     width: 100%;
+}
+
+.difficulty-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.05);
+    padding: 5px 15px;
+    border-radius: 8px;
+}
+
+.difficulty-control label {
+    font-weight: 600;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+#difficulty {
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    font-family: var(--font-family);
+    cursor: pointer;
+}
+
+#difficulty:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 .btn {
